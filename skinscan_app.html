@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkinScan</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --pink:#C47EA3;--pink-light:#F5EBF2;--pink-mid:#EDD5E5;--pink-dark:#8B4E72;
+    --green-light:#EAF3DE;--green:#3B6D11;
+    --bg:#FAFAFA;--card:#fff;--text:#1a1a1a;--muted:#888;--border:#eee;
+    --radius:14px;--radius-sm:8px;
+  }
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:420px;margin:0 auto;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  
+  /* TOP BAR */
+  .topbar{padding:16px 20px 10px;display:flex;justify-content:space-between;align-items:center;background:var(--bg)}
+  .topbar h1{font-size:20px;font-weight:600;color:var(--pink)}
+  .topbar .avatar{width:34px;height:34px;border-radius:50%;background:var(--pink-light);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--pink)}
+
+  /* SCROLL CONTENT */
+  .content{flex:1;overflow-y:auto;padding:0 16px 90px;scroll-behavior:smooth}
+  .content::-webkit-scrollbar{display:none}
+
+  /* BOTTOM NAV */
+  .bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;background:var(--card);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:10px 0 16px;z-index:100}
+  .nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:4px 12px}
+  .nav-btn svg{width:22px;height:22px;stroke:var(--muted);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:.2s}
+  .nav-btn span{font-size:10px;color:var(--muted);transition:.2s}
+  .nav-btn.active svg{stroke:var(--pink)}
+  .nav-btn.active span{color:var(--pink)}
+
+  /* SCREENS */
+  .screen{display:none}
+  .screen.active{display:block}
+
+  /* CARDS */
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid var(--border)}
+  .card-pink{background:var(--pink-light);border-color:var(--pink-mid)}
+
+  /* STREAK */
+  .streak-hero{background:linear-gradient(135deg,#f9e8f2,#fdf3f9);border-radius:var(--radius);padding:18px;margin-bottom:12px;border:1px solid var(--pink-mid)}
+  .streak-top{display:flex;justify-content:space-between;align-items:flex-start}
+  .streak-num{font-size:44px;font-weight:700;color:var(--pink);line-height:1}
+  .streak-label{font-size:12px;color:var(--pink-dark);margin-top:4px}
+  .flame{font-size:36px}
+  .days-row{display:flex;gap:6px;margin-top:14px}
+  .day{width:36px;height:36px;border-radius:50%;background:var(--pink-mid);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:var(--pink);cursor:pointer;transition:.15s}
+  .day.done{background:var(--pink);color:#fff}
+  .day.today{border:2px solid var(--pink);background:#fff;color:var(--pink)}
+  .day span{font-size:8px;margin-top:1px;opacity:.7}
+
+  /* PROGRESS BAR */
+  .progress-wrap{margin-top:14px}
+  .prog-row{display:flex;justify-content:space-between;font-size:11px;color:var(--pink-dark);margin-bottom:6px}
+  .prog-bg{height:6px;background:var(--pink-mid);border-radius:99px}
+  .prog-fill{height:6px;background:var(--pink);border-radius:99px;transition:width .6s ease}
+
+  /* SECTION LABEL */
+  .sec-label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin:18px 0 8px}
+
+  /* ROUTINE ROWS */
+  .routine-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer}
+  .routine-item:last-child{border-bottom:none}
+  .step-icon{width:40px;height:40px;border-radius:10px;background:var(--pink-light);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .step-info{flex:1}
+  .step-name{font-size:14px;font-weight:500}
+  .step-prod{font-size:12px;color:var(--muted);margin-top:2px}
+  .check{width:26px;height:26px;border-radius:50%;border:2px solid var(--pink-mid);display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
+  .check.done{background:var(--pink);border-color:var(--pink)}
+  .check.done svg{stroke:#fff}
+  .check svg{width:14px;height:14px;stroke:transparent;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:.2s}
+
+  /* GREETING */
+  .greeting{font-size:13px;color:var(--muted);margin-bottom:2px;margin-top:4px}
+  .greeting-name{font-size:18px;font-weight:600;margin-bottom:14px}
+
+  /* SCANNER */
+  .search-wrap{position:relative;margin-bottom:14px}
+  .search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .search-input{width:100%;padding:11px 12px 11px 36px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--card);outline:none;color:var(--text)}
+  .search-input:focus{border-color:var(--pink)}
+
+  .prod-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-bottom:10px}
+  .prod-top{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+  .prod-img{width:48px;height:60px;background:var(--pink-light);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+  .prod-name{font-size:14px;font-weight:600;line-height:1.3}
+  .prod-brand{font-size:11px;color:var(--muted);margin-top:2px}
+  .type-badge{display:inline-block;font-size:10px;background:var(--pink-light);color:var(--pink-dark);border-radius:99px;padding:3px 10px;margin-top:5px}
+  .ingr-label{font-size:11px;color:var(--muted);margin-bottom:5px}
+  .tags{display:flex;flex-wrap:wrap;gap:5px}
+  .tag{font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:99px;padding:3px 9px;color:var(--muted)}
+  .sub-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+  .sub-label{font-size:11px;color:var(--muted)}
+  .sub-chip{font-size:10px;background:var(--green-light);color:var(--green);border-radius:99px;padding:3px 10px;font-weight:500}
+  .filter-row{display:flex;gap:7px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+  .filter-row::-webkit-scrollbar{display:none}
+  .filter-btn{flex-shrink:0;font-size:12px;border:1px solid var(--border);border-radius:99px;padding:6px 14px;background:var(--card);color:var(--muted);cursor:pointer;transition:.15s;white-space:nowrap}
+  .filter-btn.on{background:var(--pink);border-color:var(--pink);color:#fff}
+
+  /* REWARDS */
+  .reward-hero{background:linear-gradient(135deg,#f9e8f2,#fdf3f9);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:14px;border:1px solid var(--pink-mid)}
+  .reward-pts{font-size:42px;font-weight:700;color:var(--pink)}
+  .reward-sub{font-size:12px;color:var(--pink-dark);margin-top:3px}
+  .reward-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .reward-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+  .r-emoji{font-size:28px;margin-bottom:8px}
+  .r-name{font-size:13px;font-weight:500;line-height:1.3;margin-bottom:4px}
+  .r-cost{font-size:11px;color:var(--pink);font-weight:600;margin-bottom:10px}
+  .r-btn{width:100%;padding:8px;border-radius:var(--radius-sm);border:none;font-size:12px;font-weight:500;cursor:pointer;transition:.15s}
+  .r-btn.avail{background:var(--pink);color:#fff}
+  .r-btn.avail:active{background:var(--pink-dark)}
+  .r-btn.locked{background:var(--pink-light);color:var(--pink-mid)}
+  .badge-row{display:flex;gap:8px;margin-bottom:14px}
+  .badge{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;flex:1;text-align:center}
+  .badge-icon{font-size:22px;margin-bottom:4px}
+  .badge-name{font-size:10px;color:var(--muted)}
+
+  /* PROFILE */
+  .profile-header{text-align:center;padding:10px 0 16px}
+  .profile-avatar{width:72px;height:72px;border-radius:50%;background:var(--pink-light);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:var(--pink);margin:0 auto 10px}
+  .profile-name{font-size:18px;font-weight:600}
+  .profile-since{font-size:12px;color:var(--muted);margin-top:2px}
+  .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center}
+  .stat-num{font-size:22px;font-weight:700;color:var(--pink)}
+  .stat-label{font-size:10px;color:var(--muted);margin-top:2px}
+  .pref-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border)}
+  .pref-row:last-child{border-bottom:none}
+  .pref-left{display:flex;align-items:center;gap:10px;font-size:14px}
+  .pref-icon{width:32px;height:32px;border-radius:8px;background:var(--pink-light);display:flex;align-items:center;justify-content:center;font-size:16px}
+  .toggle{width:42px;height:24px;border-radius:99px;background:var(--pink);position:relative;cursor:pointer;transition:.2s;flex-shrink:0}
+  .toggle.off{background:var(--border)}
+  .toggle::after{content:'';width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;right:3px;transition:.2s}
+  .toggle.off::after{right:auto;left:3px}
+  .arrow-icon{color:var(--muted);font-size:16px}
+  .concerns-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+  .concern-chip{font-size:12px;padding:6px 14px;border-radius:99px;background:var(--pink-light);color:var(--pink-dark);border:1px solid var(--pink-mid);cursor:pointer;transition:.15s}
+  .concern-chip.sel{background:var(--pink);color:#fff;border-color:var(--pink)}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;transition:.3s;z-index:200;white-space:nowrap;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* MODAL */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:.2s}
+  .modal-bg.open{opacity:1;pointer-events:all}
+  .modal{background:var(--card);border-radius:24px 24px 0 0;padding:20px 20px 40px;width:100%;max-width:420px;transform:translateY(100%);transition:.3s}
+  .modal-bg.open .modal{transform:translateY(0)}
+  .modal-handle{width:36px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 16px}
+  .modal-title{font-size:17px;font-weight:600;margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>skinscan ✨</h1>
+  <div class="avatar">AN</div>
+</div>
+
+<!-- HOME -->
+<div class="content screen active" id="screen-home">
+  <p class="greeting">bom dia, Ana 👋</p>
+  <p class="greeting-name">Sua rotina te espera</p>
+
+  <div class="streak-hero">
+    <div class="streak-top">
+      <div>
+        <div class="streak-num" id="streak-count">12</div>
+        <div class="streak-label">dias em sequência 🔥</div>
+      </div>
+      <div class="flame">🌸</div>
+    </div>
+    <div class="days-row" id="days-row"></div>
+  </div>
+
+  <div class="card">
+    <p style="font-size:13px;font-weight:600;margin-bottom:12px">Rotina da manhã</p>
+    <div id="routine-morning"></div>
+  </div>
+
+  <div class="card">
+    <p style="font-size:13px;font-weight:600;margin-bottom:12px">Rotina da noite</p>
+    <div id="routine-night"></div>
+  </div>
+
+  <div class="card card-pink">
+    <div class="prog-row">
+      <span>🎁 próxima recompensa</span>
+      <span id="pts-label" style="font-weight:600;color:var(--pink)">620 / 1000 pts</span>
+    </div>
+    <div class="prog-bg" style="margin-top:8px"><div class="prog-fill" id="prog-fill" style="width:62%"></div></div>
+    <p style="font-size:11px;color:var(--pink-dark);margin-top:8px;text-align:right">380 pts para o próximo prêmio</p>
+  </div>
+</div>
+
+<!-- SCANNER -->
+<div class="content screen" id="screen-scanner">
+  <p class="sec-label" style="margin-top:8px">Biblioteca de produtos</p>
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input class="search-input" id="search-input" placeholder="buscar produto ou ingrediente…" oninput="filterProducts()">
+  </div>
+  <div class="filter-row" id="filter-row"></div>
+  <div id="products-list"></div>
+</div>
+
+<!-- REWARDS -->
+<div class="content screen" id="screen-rewards">
+  <div class="reward-hero">
+    <div class="reward-pts" id="reward-pts">620</div>
+    <div class="reward-sub">pontos acumulados em 12 dias</div>
+    <div class="prog-bg" style="margin-top:12px"><div class="prog-fill" id="prog-fill2" style="width:62%"></div></div>
+    <p style="font-size:11px;color:var(--pink-dark);margin-top:6px">380 pts para o próximo prêmio</p>
+  </div>
+
+  <p class="sec-label">conquistas</p>
+  <div class="badge-row">
+    <div class="badge"><div class="badge-icon">🌟</div><div class="badge-name">7 dias seguidos</div></div>
+    <div class="badge"><div class="badge-icon">💧</div><div class="badge-name">Hidratação em dia</div></div>
+    <div class="badge"><div class="badge-icon">☀️</div><div class="badge-name">FPS nunca mais</div></div>
+  </div>
+
+  <p class="sec-label">catálogo de amostras</p>
+  <div class="reward-grid" id="rewards-grid"></div>
+</div>
+
+<!-- PERFIL -->
+<div class="content screen" id="screen-profile">
+  <div class="profile-header">
+    <div class="profile-avatar">AN</div>
+    <div class="profile-name">Ana Lima</div>
+    <div class="profile-since">membro desde março 2025</div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-num">12</div><div class="stat-label">streak atual</div></div>
+    <div class="stat-card"><div class="stat-num">47</div><div class="stat-label">dias ativos</div></div>
+    <div class="stat-card"><div class="stat-num">620</div><div class="stat-label">pontos</div></div>
+  </div>
+
+  <p class="sec-label">tipo de pele & concerns</p>
+  <div class="card" style="margin-bottom:14px">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Tipo de pele</p>
+    <div class="concerns-wrap" id="skin-types"></div>
+    <p style="font-size:12px;color:var(--muted);margin:14px 0 8px">Principais concerns</p>
+    <div class="concerns-wrap" id="concerns"></div>
+  </div>
+
+  <p class="sec-label">preferências</p>
+  <div class="card">
+    <div class="pref-row">
+      <div class="pref-left"><div class="pref-icon">🌅</div>Lembrete manhã (7h)</div>
+      <div class="toggle" id="toggle-manha" onclick="togglePref(this)"></div>
+    </div>
+    <div class="pref-row">
+      <div class="pref-left"><div class="pref-icon">🌙</div>Lembrete noite (21h)</div>
+      <div class="toggle" id="toggle-noite" onclick="togglePref(this)"></div>
+    </div>
+    <div class="pref-row">
+      <div class="pref-left"><div class="pref-icon">🎁</div>Novidades de amostras</div>
+      <div class="toggle" id="toggle-amostras" onclick="togglePref(this)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottomnav">
+  <button class="nav-btn active" onclick="goTo('home',this)">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>home</span>
+  </button>
+  <button class="nav-btn" onclick="goTo('scanner',this)">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    <span>scanner</span>
+  </button>
+  <button class="nav-btn" onclick="goTo('rewards',this)">
+    <svg viewBox="0 0 24 24"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+    <span>rewards</span>
+  </button>
+  <button class="nav-btn" onclick="goTo('profile',this)">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>perfil</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+const days=['D','S','T','Q','Q','S','S'];
+const daysRow=document.getElementById('days-row');
+[...days].forEach((d,i)=>{
+  const el=document.createElement('div');
+  el.className='day'+(i<6?' done':' today');
+  el.innerHTML=`${d}`;
+  daysRow.appendChild(el);
+});
+
+const morning=[
+  {icon:'🫧',name:'Limpeza',prod:'La Roche-Posay Effaclar',done:true},
+  {icon:'💧',name:'Sérum vitamina C',prod:'TBW 10% Vitamina C',done:true},
+  {icon:'🌿',name:'Hidratante',prod:'Neutrogena Hydro Boost',done:false},
+  {icon:'☀️',name:'Protetor solar',prod:'Sunmax FPS 50',done:false},
+];
+const night=[
+  {icon:'🫧',name:'Limpeza dupla',prod:'Bioderma Sensibio',done:false},
+  {icon:'🧪',name:'Sérum retinol',prod:'The Ordinary 0.5%',done:false},
+  {icon:'🌙',name:'Hidratante noturno',prod:'CeraVe PM',done:false},
+];
+
+let pts=620;
+function buildRoutine(list,containerId){
+  const c=document.getElementById(containerId);
+  list.forEach((item,i)=>{
+    const d=document.createElement('div');
+    d.className='routine-item';
+    d.innerHTML=`<div class="step-icon">${item.icon}</div>
+    <div class="step-info"><div class="step-name">${item.name}</div><div class="step-prod">${item.prod}</div></div>
+    <div class="check${item.done?' done':''}" id="chk-${containerId}-${i}">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>`;
+    d.querySelector('.check').onclick=()=>toggleCheck(item,containerId,i);
+    c.appendChild(d);
+  });
+}
+buildRoutine(morning,'routine-morning');
+buildRoutine(night,'routine-night');
+
+function toggleCheck(item,cid,i){
+  const el=document.getElementById(`chk-${cid}-${i}`);
+  if(!item.done){
+    item.done=true;el.classList.add('done');
+    pts+=50;updatePts();showToast('+50 pts 🌸');
+  } else {
+    item.done=false;el.classList.remove('done');
+    pts=Math.max(0,pts-50);updatePts();
+  }
+}
+function updatePts(){
+  const pct=Math.min(100,(pts/1000)*100);
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-fill2').style.width=pct+'%';
+  document.getElementById('pts-label').textContent=pts+' / 1000 pts';
+  document.getElementById('reward-pts').textContent=pts;
+  document.querySelectorAll('.r-btn').forEach((b,i)=>{
+    const costs=[500,750,1000,2000];
+    if(pts>=costs[i]){b.className='r-btn avail';b.textContent='resgatar';}
+    else{b.className='r-btn locked';b.textContent='em breve';}
+  });
+}
+
+// PRODUCTS
+const products=[
+  {icon:'🫙',name:'Niacinamide 10% + Zinc',brand:'The Ordinary',type:'Sérum',badge:'poros + oleosidade',ingrs:['niacinamida 10%','zinco PCA','sem perfume','pele oleosa'],subs:['Dermage B3 Serum','SkinCeuticals Phloretin'],desc:'Sérum leve que controla oleosidade e minimiza poros. Ideal para peles mistas a oleosas com cravos ou acne leve.'},
+  {icon:'🧴',name:'Hyalu B5 Serum',brand:'La Roche-Posay',type:'Sérum',badge:'hidratação + reparação',ingrs:['ác. hialurônico','vitamina B5','madecassoside','pele seca'],subs:['Neutrogena Hydro Boost','Vichy Aqualia'],desc:'Sérum altamente hidratante com ácido hialurônico duplo peso molecular. Reconstrói a barreira cutânea.'},
+  {icon:'☀️',name:'Anthelios FPS 60',brand:'La Roche-Posay',type:'Protetor',badge:'FPS alto + toque seco',ingrs:['filtro UVA/UVB','mexoryl XL','toque seco'],subs:['Sunmax FPS 50+','Episol FPS 60'],desc:'Proteção solar de amplo espectro com textura fluida e toque seco. Não embranquece.'},
+  {icon:'💊',name:'Retinol 0.5%',brand:'The Ordinary',type:'Sérum',badge:'anti-aging + renov.',ingrs:['retinol','vitamina F','esqualeno'],subs:['Avène RetrinAL 0.1','Roc Retinol'],desc:'Sérum com retinol para renovação celular e suavização de linhas. Usar à noite com FPS no dia seguinte.'},
+  {icon:'🫗',name:'Effaclar Gel',brand:'La Roche-Posay',type:'Limpeza',badge:'controle oleosidade',ingrs:['ácido salicílico','zinco','LHA'],subs:['Neutrogena Oil-Free','CeraVe Foaming'],desc:'Gel de limpeza para peles oleosas e acneicas. Remove impurezas sem ressecar.'},
+  {icon:'💧',name:'Vitamina C 10%',brand:'TBW (The Beauty Workshop)',type:'Sérum',badge:'luminosidade + manchas',ingrs:['ác. ascórbico 10%','vitamina E','ferúlico'],subs:['Melano CC','Skinceuticals C E Ferulic'],desc:'Sérum clareador e antioxidante. Combina vitamina C pura com E e ferúlico para potencializar o efeito.'},
+];
+const categories=['Todos','Sérum','Protetor','Limpeza'];
+let activeFilter='Todos';
+
+function buildFilters(){
+  const c=document.getElementById('filter-row');
+  categories.forEach(cat=>{
+    const b=document.createElement('button');
+    b.className='filter-btn'+(cat==='Todos'?' on':'');
+    b.textContent=cat;
+    b.onclick=()=>{
+      activeFilter=cat;
+      document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      filterProducts();
+    };
+    c.appendChild(b);
+  });
+}
+buildFilters();
+
+function buildProducts(list){
+  const c=document.getElementById('products-list');c.innerHTML='';
+  if(!list.length){c.innerHTML='<p style="color:var(--muted);text-align:center;padding:20px;font-size:14px">Nenhum produto encontrado</p>';return;}
+  list.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='prod-card';
+    d.innerHTML=`<div class="prod-top">
+      <div class="prod-img">${p.icon}</div>
+      <div>
+        <div class="prod-name">${p.name}</div>
+        <div class="prod-brand">${p.brand}</div>
+        <span class="type-badge">${p.badge}</span>
+      </div>
+    </div>
+    <div class="ingr-label">Ingredientes-chave</div>
+    <div class="tags">${p.ingrs.map(i=>`<span class="tag">${i}</span>`).join('')}</div>
+    <div class="sub-row">
+      <span class="sub-label">Pode substituir por:</span>
+      ${p.subs.map(s=>`<span class="sub-chip">${s}</span>`).join('')}
+    </div>`;
+    d.onclick=()=>openProduct(p);
+    c.appendChild(d);
+  });
+}
+function filterProducts(){
+  const q=document.getElementById('search-input').value.toLowerCase();
+  let list=products;
+  if(activeFilter!=='Todos') list=list.filter(p=>p.type===activeFilter);
+  if(q) list=list.filter(p=>p.name.toLowerCase().includes(q)||p.brand.toLowerCase().includes(q)||p.ingrs.some(i=>i.toLowerCase().includes(q)));
+  buildProducts(list);
+}
+buildProducts(products);
+
+function openProduct(p){
+  document.getElementById('modal-content').innerHTML=`
+    <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px">
+      <div style="width:56px;height:70px;background:var(--pink-light);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0">${p.icon}</div>
+      <div>
+        <div style="font-size:17px;font-weight:600">${p.name}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${p.brand}</div>
+        <span class="type-badge">${p.badge}</span>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px">${p.desc}</p>
+    <div class="ingr-label">Ingredientes-chave</div>
+    <div class="tags" style="margin-bottom:14px">${p.ingrs.map(i=>`<span class="tag">${i}</span>`).join('')}</div>
+    <div class="ingr-label">Pode substituir por</div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px">${p.subs.map(s=>`<span class="sub-chip">${s}</span>`).join('')}</div>
+    <button onclick="addToRoutine('${p.name}');closeModal()" style="width:100%;padding:13px;background:var(--pink);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer">+ Adicionar à minha rotina</button>
+  `;
+  document.getElementById('modal-bg').classList.add('open');
+}
+function closeModal(e){
+  if(!e||e.target===document.getElementById('modal-bg'))
+    document.getElementById('modal-bg').classList.remove('open');
+}
+function addToRoutine(name){showToast(name+' adicionado ✨');}
+
+// REWARDS
+const rewardsList=[
+  {emoji:'🧴',name:'Amostra sérum vitamina C',cost:500},
+  {emoji:'🌿',name:'Máscara hidratante noturna',cost:750},
+  {emoji:'☀️',name:'Mini protetor FPS 50+',cost:1000},
+  {emoji:'💜',name:'Kit skincare trial completo',cost:2000},
+];
+function buildRewards(){
+  const g=document.getElementById('rewards-grid');
+  rewardsList.forEach((r,i)=>{
+    const d=document.createElement('div');
+    d.className='reward-item';
+    const avail=pts>=r.cost;
+    d.innerHTML=`<div class="r-emoji">${r.emoji}</div>
+    <div class="r-name">${r.name}</div>
+    <div class="r-cost">${r.cost} pts</div>
+    <button class="r-btn ${avail?'avail':'locked'}" onclick="redeemReward(this,${r.cost},'${r.name}')">${avail?'resgatar':'em breve'}</button>`;
+    g.appendChild(d);
+  });
+}
+buildRewards();
+function redeemReward(btn,cost,name){
+  if(pts<cost) return;
+  pts-=cost;updatePts();
+  showToast('🎁 '+name+' resgatado!');
+}
+
+// PROFILE
+const skinTypes=['Normal','Seca','Oleosa','Mista','Sensível'];
+const concernsList=['Acne','Oleosidade','Manchas','Hidratação','Poros','Rugas','Sensibilidade'];
+let selSkin=['Mista'];
+let selConcerns=['Oleosidade','Manchas'];
+
+function buildChips(list,sel,containerId,selArr){
+  const c=document.getElementById(containerId);c.innerHTML='';
+  list.forEach(item=>{
+    const d=document.createElement('div');
+    d.className='concern-chip'+(sel.includes(item)?' sel':'');
+    d.textContent=item;
+    d.onclick=()=>{
+      if(selArr.includes(item)) selArr.splice(selArr.indexOf(item),1);
+      else selArr.push(item);
+      buildChips(list,selArr,containerId,selArr);
+    };
+    c.appendChild(d);
+  });
+}
+buildChips(skinTypes,selSkin,'skin-types',selSkin);
+buildChips(concernsList,selConcerns,'concerns',selConcerns);
+
+function togglePref(el){el.classList.toggle('off');}
+
+// NAV
+function goTo(id,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// TOAST
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+</script>
+</body>
+</html>
